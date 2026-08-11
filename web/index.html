@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relay Control Panel</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+        .hidden { display: none; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        .status { font-weight: bold; margin-bottom: 20px; }
+        .logs { margin-top: 20px; border-top: 1px solid #ccc; padding-top: 20px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+
+    <h1>Relay V1 Control Panel</h1>
+
+    <div id="auth-section">
+        <h3>Login</h3>
+        <input type="email" id="email" placeholder="Email" /><br><br>
+        <input type="password" id="password" placeholder="Password" /><br><br>
+        <button id="login-btn">Login</button>
+    </div>
+
+    <div id="dashboard-section" class="hidden">
+        <button id="logout-btn">Logout</button>
+        <hr>
+        
+        <h2>Device Status: <span id="current-state" class="status">Loading...</span></h2>
+        
+        <button id="btn-activate">ACTIVATE</button>
+        <button id="btn-pause">PAUSE</button>
+        <button id="btn-abort" style="background-color: red; color: white;">ABORT</button>
+        
+        <div class="logs">
+            <h2>SMS Logs</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Sender</th>
+                        <th>Message ID</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="logs-body">
+                    <!-- Logs will appear here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, collection, query, orderBy, limit, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // TODO: Replace with your Firebase config
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let deviceId = null;
+
+        const authSection = document.getElementById('auth-section');
+        const dashboardSection = document.getElementById('dashboard-section');
+        const logsBody = document.getElementById('logs-body');
+        const currentStateEl = document.getElementById('current-state');
+
+        document.getElementById('login-btn').addEventListener('click', () => {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            signInWithEmailAndPassword(auth, email, password).catch(e => alert(e.message));
+        });
+
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            signOut(auth);
+        });
+
+        onAuthStateChanged(auth, user => {
+            if (user) {
+                authSection.classList.add('hidden');
+                dashboardSection.classList.remove('hidden');
+                deviceId = user.uid; // Assumes device and panel use same account for V1
+                listenToDevice();
+                listenToLogs();
+            } else {
+                authSection.classList.remove('hidden');
+                dashboardSection.classList.add('hidden');
+            }
+        });
+
+        function listenToDevice() {
+            if (!deviceId) return;
+            const docRef = doc(db, 'devices', deviceId);
+            onSnapshot(docRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    currentStateEl.innerText = data.currentState || "UNKNOWN";
+                }
+            });
+        }
+
+        function listenToLogs() {
+            if (!deviceId) return;
+            const q = query(collection(db, `devices/${deviceId}/logs`), orderBy('timestamp', 'desc'), limit(50));
+            onSnapshot(q, (snapshot) => {
+                logsBody.innerHTML = '';
+                snapshot.forEach((docSnap) => {
+                    const log = docSnap.data();
+                    const tr = document.createElement('tr');
+                    const d = new Date(log.timestamp);
+                    tr.innerHTML = `
+                        <td>${d.toLocaleString()}</td>
+                        <td>${log.sender}</td>
+                        <td>${log.messageId}</td>
+                        <td>${log.status}</td>
+                    `;
+                    logsBody.appendChild(tr);
+                });
+            });
+        }
+
+        function sendCommand(cmd) {
+            if (!deviceId) return;
+            const docRef = doc(db, 'devices', deviceId);
+            updateDoc(docRef, { command: cmd }).catch(e => alert("Error: " + e.message));
+        }
+
+        document.getElementById('btn-activate').addEventListener('click', () => sendCommand('ACTIVATE'));
+        document.getElementById('btn-pause').addEventListener('click', () => sendCommand('PAUSE'));
+        document.getElementById('btn-abort').addEventListener('click', () => {
+            if (confirm("Are you sure you want to ABORT? The device will stop working completely and must be manually reset.")) {
+                sendCommand('ABORT');
+            }
+        });
+    </script>
+</body>
+</html>
