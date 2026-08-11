@@ -26,6 +26,9 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.3.1'
+
+      - name: Decode Keystore
+        run: base64 -d debug.keystore.base64 > debug.keystore
         
       # Using gradle command provided by setup-gradle since gradlew might be missing
       - name: Build Debug APK
