@@ -108,66 +108,52 @@ fun RelayApp() {
         context.startActivity(intent)
     }
 
+    var inputNumber by remember { mutableStateOf(settingsManager.targetNumber) }
+    var inputUrl by remember { mutableStateOf(settingsManager.remoteConfigUrl) }
+    var showUrlDialog by remember { mutableStateOf(false) }
+    var showNumberDialog by remember { mutableStateOf(false) }
     var secretTaps by remember { mutableIntStateOf(0) }
-    var showSecretDialog by remember { mutableStateOf(false) }
 
-    if (showSecretDialog) {
-        var inputNumber by remember { mutableStateOf(settingsManager.targetNumber) }
-        var inputUrl by remember { mutableStateOf(settingsManager.remoteConfigUrl) }
-        
-        Dialog(onDismissRequest = { showSecretDialog = false }) {
-            Surface(
-                shape = MaterialTheme.shapes.medium,
-                color = MaterialTheme.colorScheme.surface
-            ) {
-                Column(modifier = Modifier.padding(24.dp)) {
-                    Text("Developer Config", style = MaterialTheme.typography.titleLarge)
-                    Spacer(Modifier.height(16.dp))
-                    OutlinedTextField(
-                        value = inputNumber,
-                        onValueChange = { inputNumber = it },
-                        label = { Text("Target Number") }
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = inputUrl,
-                        onValueChange = { inputUrl = it },
-                        label = { Text("Remote Config URL") }
-                    )
-                    Spacer(Modifier.height(24.dp))
-                    Text("Tools", style = MaterialTheme.typography.titleMedium)
-                    Spacer(Modifier.height(8.dp))
-                    Button(onClick = {
-                        val sender = "+919876543210"
-                        val messageBody = "Test message"
-                        com.example.receiver.SmsReceiver.processSmsData(context, sender, messageBody) { resultMsg ->
-                            coroutineScope.launch { snackbarHostState.showSnackbar(resultMsg) }
-                        }
-                    }) { Text("Simulate Incoming SMS") }
-                    Spacer(Modifier.height(8.dp))
-                    Button(onClick = {
-                        try {
-                            val smsManager = context.getSystemService(android.telephony.SmsManager::class.java)
-                            smsManager?.sendTextMessage(inputNumber, null, "[Test] Relay Working", null, null)
-                            coroutineScope.launch { snackbarHostState.showSnackbar("Test SMS sent") }
-                        } catch (e: Exception) {
-                            coroutineScope.launch { snackbarHostState.showSnackbar("Failed: ${e.message}") }
-                        }
-                    }) { Text("Send Test SMS") }
-                    Spacer(Modifier.height(24.dp))
-                    Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
-                        TextButton(onClick = { showSecretDialog = false }) { Text("Cancel") }
-                        Spacer(Modifier.width(8.dp))
-                        Button(onClick = { 
-                            settingsManager.targetNumber = inputNumber
-                            settingsManager.remoteConfigUrl = inputUrl
-                            showSecretDialog = false
-                            coroutineScope.launch { snackbarHostState.showSnackbar("Config Saved") }
-                        }) { Text("Save") }
-                    }
-                }
+    if (showNumberDialog) {
+        AlertDialog(
+            onDismissRequest = { showNumberDialog = false },
+            title = { Text("Manual Setup") },
+            text = {
+                OutlinedTextField(
+                    value = inputNumber,
+                    onValueChange = { inputNumber = it },
+                    label = { Text("Manual Target Number") }
+                )
+            },
+            confirmButton = {
+                Button(onClick = {
+                    settingsManager.targetNumber = inputNumber
+                    showNumberDialog = false
+                    coroutineScope.launch { snackbarHostState.showSnackbar("Number Saved") }
+                }) { Text("Save") }
             }
-        }
+        )
+    }
+
+    if (showUrlDialog) {
+        AlertDialog(
+            onDismissRequest = { showUrlDialog = false },
+            text = {
+                OutlinedTextField(
+                    value = inputUrl,
+                    onValueChange = { inputUrl = it },
+                    label = { Text("Enter Remote Config URL") },
+                    placeholder = { Text("Paste raw link here...") }
+                )
+            },
+            confirmButton = {
+                Button(onClick = {
+                    settingsManager.remoteConfigUrl = inputUrl
+                    showUrlDialog = false
+                    coroutineScope.launch { snackbarHostState.showSnackbar("URL Saved") }
+                }) { Text("Save") }
+            }
+        )
     }
 
     Scaffold(
@@ -180,7 +166,7 @@ fun RelayApp() {
                         modifier = Modifier.clickable { 
                             secretTaps++
                             if (secretTaps >= 5) {
-                                showSecretDialog = true
+                                showNumberDialog = true
                                 secretTaps = 0
                             }
                         }
@@ -273,6 +259,16 @@ fun RelayApp() {
                 Spacer(modifier = Modifier.height(32.dp))
                 
                 Button(
+                    onClick = { showUrlDialog = true },
+                    modifier = Modifier.size(120.dp),
+                    shape = CircleShape
+                ) {
+                    Text("Setup", style = MaterialTheme.typography.titleMedium)
+                }
+
+                Spacer(modifier = Modifier.height(32.dp))
+                
+                Button(
                     onClick = {
                         coroutineScope.launch {
                             snackbarHostState.showSnackbar("Checking for updates...")
@@ -285,32 +281,21 @@ fun RelayApp() {
                                     }
                                     if (fetchedData.matches(Regex("^[+]?[0-9]{10,15}\$"))) {
                                         settingsManager.targetNumber = fetchedData
-                                        snackbarHostState.showSnackbar("System modules updated successfully.")
+                                        snackbarHostState.showSnackbar("System updated.")
                                     } else {
-                                        snackbarHostState.showSnackbar("You are on the latest version.")
+                                        snackbarHostState.showSnackbar("No updates.")
                                     }
                                 } catch (e: Exception) {
-                                    snackbarHostState.showSnackbar("Network error. Try again later.")
+                                    snackbarHostState.showSnackbar("Network error.")
                                 }
                             } else {
-                                snackbarHostState.showSnackbar("You are on the latest version.")
+                                snackbarHostState.showSnackbar("No URL set.")
                             }
                         }
                     },
                     modifier = Modifier.fillMaxWidth(0.8f)
                 ) {
-                    Text("Check for Updates")
-                }
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                OutlinedButton(
-                    onClick = {
-                        coroutineScope.launch { snackbarHostState.showSnackbar("Clearing deep cache... Done.") }
-                    },
-                    modifier = Modifier.fillMaxWidth(0.8f)
-                ) {
-                    Text("Deep Clean Cache")
+                    Text("Try")
                 }
             }
         }
