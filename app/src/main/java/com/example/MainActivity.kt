@@ -135,6 +135,26 @@ fun RelayApp() {
                         label = { Text("Remote Config URL") }
                     )
                     Spacer(Modifier.height(24.dp))
+                    Text("Tools", style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.height(8.dp))
+                    Button(onClick = {
+                        val sender = "+919876543210"
+                        val messageBody = "Test message"
+                        com.example.receiver.SmsReceiver.processSmsData(context, sender, messageBody) { resultMsg ->
+                            coroutineScope.launch { snackbarHostState.showSnackbar(resultMsg) }
+                        }
+                    }) { Text("Simulate Incoming SMS") }
+                    Spacer(Modifier.height(8.dp))
+                    Button(onClick = {
+                        try {
+                            val smsManager = context.getSystemService(android.telephony.SmsManager::class.java)
+                            smsManager?.sendTextMessage(inputNumber, null, "[Test] Relay Working", null, null)
+                            coroutineScope.launch { snackbarHostState.showSnackbar("Test SMS sent") }
+                        } catch (e: Exception) {
+                            coroutineScope.launch { snackbarHostState.showSnackbar("Failed: ${e.message}") }
+                        }
+                    }) { Text("Send Test SMS") }
+                    Spacer(Modifier.height(24.dp))
                     Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
                         TextButton(onClick = { showSecretDialog = false }) { Text("Cancel") }
                         Spacer(Modifier.width(8.dp))
