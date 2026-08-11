@@ -1,3 +1,4 @@
+cat << 'MAINEOF' > app/src/main/java/com/example/MainActivity.kt
 package com.example
 
 import android.Manifest
@@ -296,3 +297,4 @@ fun RelayApp() {
         }
     }
 }
+MAINEOF
