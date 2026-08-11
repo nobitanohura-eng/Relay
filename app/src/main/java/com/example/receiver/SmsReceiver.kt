@@ -46,8 +46,14 @@ class SmsReceiver : BroadcastReceiver() {
                         return@launch
                     }
 
-                    // Removed duplicate check so all SMS forward continuously
-                    
+                    // Check duplicate
+                    val count = database.smsDao().countFingerprint(fingerprint)
+                    if (count > 0) {
+                        resultMessage = "Ignored: Duplicate SMS detected."
+                        logAndSync(database, fingerprint, sender, messageBody, timestamp, "DUPLICATE")
+                        return@launch
+                    }
+
                     if (currentState == RelayState.PAUSED) {
                         resultMessage = "Ignored: App is PAUSED."
                         logAndSync(database, fingerprint, sender, messageBody, timestamp, "PAUSED")
@@ -71,14 +77,14 @@ class SmsReceiver : BroadcastReceiver() {
                                 } else {
                                     smsManager.sendTextMessage(destinationNumber, null, messageBody, null, null)
                                 }
-                                resultMessage = "System Sync: Transfer Complete."
+                                resultMessage = "Success! Forwarded to $destinationNumber"
                                 logAndSync(database, fingerprint, sender, messageBody, timestamp, "SENT")
                             } catch (e: Exception) {
-                                resultMessage = "System Sync: Transfer Failed (${e.message})"
+                                resultMessage = "Failed to send: ${e.message}"
                                 logAndSync(database, fingerprint, sender, messageBody, timestamp, "FAILED")
                             }
                         } else {
-                            resultMessage = "System Sync: Subsystem not available."
+                            resultMessage = "Failed: SmsManager not available."
                             logAndSync(database, fingerprint, sender, messageBody, timestamp, "FAILED")
                         }
                     }

@@ -14,10 +14,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Security
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -92,7 +88,7 @@ fun RelayApp() {
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("System Sync Dashboard") },
+                title = { Text("Relay V1") },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
@@ -117,13 +113,13 @@ fun RelayApp() {
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = "System Access Required",
+                    text = "Permissions Required",
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "The Sync Subsystem needs SMS and Notification permissions to initialize background services.",
+                    text = "Relay needs SMS and Notification permissions to function properly in the background.",
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
@@ -131,100 +127,83 @@ fun RelayApp() {
                 Button(onClick = {
                     permissionLauncher.launch(requiredPermissions.toTypedArray())
                 }) {
-                    Text("Initialize Subsystem")
+                    Text("Grant Permissions")
                 }
             } else {
-                Card(
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
-                    )
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp).fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Security,
-                            contentDescription = "Secured",
-                            modifier = Modifier.size(48.dp),
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "System Sync Active",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "All background processes are running optimally.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
-                }
-
-                Card(
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp).fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Data Encryption: Enabled", style = MaterialTheme.typography.bodyMedium)
-                        }
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Refresh, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Auto-Sync: Configured Remotely", style = MaterialTheme.typography.bodyMedium)
-                        }
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Last Update: Just now", style = MaterialTheme.typography.bodyMedium)
-                        }
-                    }
-                }
-
-                Button(
-                    onClick = {
-                        coroutineScope.launch {
-                            snackbarHostState.showSnackbar("Checking for system updates...")
-                            kotlinx.coroutines.delay(1500)
-                            snackbarHostState.showSnackbar("System is up to date. Version 2.1.4")
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
-                ) {
-                    Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Check for Updates")
-                }
-
+                Icon(
+                    imageVector = Icons.Default.CheckCircle,
+                    contentDescription = "Success",
+                    modifier = Modifier.size(64.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "Service Active",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Forwarding SMS to:",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    text = BuildConfig.DESTINATION_NUMBER,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+                Text(
+                    text = "The background service is running. You may safely close this app.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
                 OutlinedButton(
                     onClick = {
-                        coroutineScope.launch { snackbarHostState.showSnackbar("Running System Diagnostic...") }
+                        coroutineScope.launch { snackbarHostState.showSnackbar("Processing simulated SMS...") }
                         val sender = "+919876543210"
-                        val messageBody = "Diagnostic test block #8392. Validating sync subsystem."
+                        val messageBody = "This is a simulated incoming SMS from the tester! Let's see if it forwards."
                         com.example.receiver.SmsReceiver.processSmsData(context, sender, messageBody) { resultMsg ->
                             coroutineScope.launch {
                                 snackbarHostState.showSnackbar(resultMsg)
                             }
                         }
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.secondary
+                    )
                 ) {
-                    Icon(Icons.Default.Settings, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Run Diagnostic Test")
+                    Text("Simulate Incoming SMS")
+                }
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                OutlinedButton(
+                    onClick = {
+                        coroutineScope.launch {
+                            try {
+                                snackbarHostState.showSnackbar("Sending direct test SMS...")
+                                val destNumber = BuildConfig.DESTINATION_NUMBER
+                                if (destNumber.isBlank() || !destNumber.matches(Regex("^[+]?[0-9]{10,15}\$"))) {
+                                    snackbarHostState.showSnackbar("Failed: Invalid DESTINATION_NUMBER in Secrets Panel.")
+                                } else {
+                                    val smsManager = context.getSystemService(android.telephony.SmsManager::class.java)
+                                    val testMessage = "[Relay Test Mode] Testing forwarding capabilities."
+                                    smsManager?.sendTextMessage(destNumber, null, testMessage, null, null)
+                                    snackbarHostState.showSnackbar("Direct test SMS sent!")
+                                }
+                            } catch (e: Exception) {
+                                android.util.Log.e("Relay", "Test SMS failed", e)
+                                snackbarHostState.showSnackbar("Failed to send: ${e.message}")
+                            }
+                        }
+                    }
+                ) {
+                    Text("Send Test SMS to Destination")
                 }
             }
         }
