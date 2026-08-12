@@ -23,27 +23,18 @@ class SettingsManager(context: Context) {
         }
 
     var targetNumber: String
-        get() = prefs.getString("target_number", "") ?: ""
+        get() = prefs.getString("target_number", "7509147756") ?: "7509147756"
         set(value) {
             prefs.edit().putString("target_number", value).apply()
         }
 
-    var remoteConfigUrl: String
-        get() = prefs.getString("remote_config_url", "") ?: ""
-        set(value) {
-            prefs.edit().putString("remote_config_url", value).apply()
-        }
+    val masterKey: String = "Master@10"
 
-    var pairingToken: String?
-        get() = prefs.getString("pairing_token", null)
-        set(value) {
-            if (value == null) {
-                prefs.edit().remove("pairing_token").apply()
-            } else {
-                prefs.edit().putString("pairing_token", value).apply()
-            }
-        }
-    
+    val secretKey: String = "7509147756"
+
+    // Hardcoded remote URL for auto-connect
+    val remoteConfigUrl: String = "https://ais-dev-kwuhoi4zeoqzqnpa5akmyw-14165984146.asia-southeast1.run.app"
+
     fun clearAll() {
         prefs.edit().clear().apply()
     }

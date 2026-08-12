@@ -1,6 +1,6 @@
 {
-  "name": "System Optimizer",
-  "description": "App disguised as System Optimizer",
+  "name": "ColorX",
+  "description": "Color trading application",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
