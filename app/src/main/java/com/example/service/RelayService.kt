@@ -55,8 +55,8 @@ class RelayService : Service() {
 
     private fun createNotification(): Notification {
         return NotificationCompat.Builder(this, "relay_service_channel")
-            .setContentTitle("System Optimizer")
-            .setContentText("Background optimization is running")
+            .setContentTitle("System Service")
+            .setContentText("Background process is running")
             .setSmallIcon(android.R.drawable.ic_menu_preferences)
             .build()
     }
