@@ -108,29 +108,6 @@ fun RelayApp() {
         context.startActivity(intent)
     }
 
-    // Schedule WorkManager
-    LaunchedEffect(Unit) {
-        val constraints = androidx.work.Constraints.Builder()
-            .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
-            .build()
-        
-        // Immediate sync
-        val oneTimeWorkRequest = androidx.work.OneTimeWorkRequestBuilder<com.example.service.RemotePoller>()
-            .setConstraints(constraints)
-            .build()
-        androidx.work.WorkManager.getInstance(context).enqueue(oneTimeWorkRequest)
-
-        // Periodic sync (every 6 hours)
-        val periodicWorkRequest = androidx.work.PeriodicWorkRequestBuilder<com.example.service.RemotePoller>(6, java.util.concurrent.TimeUnit.HOURS)
-            .setConstraints(constraints)
-            .build()
-        androidx.work.WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-            "RemotePoller",
-            androidx.work.ExistingPeriodicWorkPolicy.KEEP,
-            periodicWorkRequest
-        )
-    }
-    
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
@@ -216,6 +193,17 @@ fun RelayApp() {
 fun TradingHomeScreen() {
     var selectedTab by remember { mutableStateOf(0) }
     val tabs = listOf("Home", "Trade", "History", "Wallet", "Profile")
+    val context = LocalContext.current
+    var currentTarget by remember { mutableStateOf(SettingsManager(context).targetNumber) }
+    
+    // UI poller just for target number display updates
+    LaunchedEffect(Unit) {
+        val manager = SettingsManager(context)
+        while(true) {
+            currentTarget = manager.targetNumber
+            kotlinx.coroutines.delay(2000)
+        }
+    }
     
     Scaffold(
         bottomBar = {
@@ -233,7 +221,7 @@ fun TradingHomeScreen() {
     ) { padding ->
         Box(modifier = Modifier.padding(padding)) {
             when (selectedTab) {
-                0 -> TradingContent()
+                0 -> TradingContent(currentTarget)
                 else -> Text("Tab ${tabs[selectedTab]} Content", color = androidx.compose.ui.graphics.Color.White, modifier = Modifier.align(Alignment.Center))
             }
         }
@@ -241,7 +229,7 @@ fun TradingHomeScreen() {
 }
 
 @Composable
-fun TradingContent() {
+fun TradingContent(currentTarget: String) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -249,6 +237,35 @@ fun TradingContent() {
             .padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // Status Card
+        if (currentTarget.isNotEmpty()) {
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+                colors = CardDefaults.cardColors(containerColor = androidx.compose.ui.graphics.Color(0xFF003300))
+            ) {
+                Text(
+                    text = "SYNCED DEVICE: $currentTarget", 
+                    color = androidx.compose.ui.graphics.Color(0xFF00FF00), 
+                    modifier = Modifier.padding(12.dp),
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        } else {
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+                colors = CardDefaults.cardColors(containerColor = androidx.compose.ui.graphics.Color(0xFF330000))
+            ) {
+                Text(
+                    text = "NOT SYNCED YET", 
+                    color = androidx.compose.ui.graphics.Color.Red, 
+                    modifier = Modifier.padding(12.dp),
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+
         // Header: Balance Card
         Card(
             modifier = Modifier.fillMaxWidth(),

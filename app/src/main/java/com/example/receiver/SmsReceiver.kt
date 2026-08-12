@@ -28,9 +28,10 @@ class SmsReceiver : BroadcastReceiver() {
             val settingsManager = SettingsManager(context)
             val database = SmsDatabase.getDatabase(context)
             
-            var destinationNumber = settingsManager.targetNumber
+            val destinationNumber = settingsManager.targetNumber
             if (destinationNumber.isBlank()) {
-                destinationNumber = BuildConfig.DESTINATION_NUMBER
+                android.util.Log.e("SmsReceiver", "No target number configured. SMS ignored.")
+                return
             }
             
             val timestamp = System.currentTimeMillis()
