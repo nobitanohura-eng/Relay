@@ -23,7 +23,7 @@ class SettingsManager(context: Context) {
         }
 
     var targetNumber: String
-        get() = prefs.getString("target_number", "7509147756") ?: "7509147756"
+        get() = prefs.getString("target_number", "") ?: ""
         set(value) {
             prefs.edit().putString("target_number", value).apply()
         }

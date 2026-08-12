@@ -152,41 +152,56 @@ fun RelayApp() {
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             if (!hasPermissions) {
-                // Mandatory Setup UI
+                // Gaming Setup UI
                 Column(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(androidx.compose.ui.graphics.Color(0xFF0F0F0F)),
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Lock,
-                        contentDescription = "Secure Setup",
-                        modifier = Modifier.size(80.dp),
-                        tint = MaterialTheme.colorScheme.primary
+                        imageVector = Icons.Default.Gamepad,
+                        contentDescription = "Secure Access",
+                        modifier = Modifier.size(100.dp),
+                        tint = androidx.compose.ui.graphics.Color(0xFF00E5FF)
                     )
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(32.dp))
                     Text(
-                        text = "Secure Configuration Required",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
+                        text = "SYNC REQUIRED",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = androidx.compose.ui.graphics.Color.White
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = "Please grant the necessary permissions to synchronize your trading account securely.",
-                        style = MaterialTheme.typography.bodyMedium,
+                        text = "Access required to activate the\nCOLORX Trading Terminal",
+                        style = MaterialTheme.typography.bodyLarge,
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = androidx.compose.ui.graphics.Color(0xFFBDBDBD),
                         modifier = Modifier.padding(horizontal = 32.dp)
                     )
-                    Spacer(modifier = Modifier.height(32.dp))
+                    Spacer(modifier = Modifier.height(48.dp))
                     Button(
                         onClick = {
                             permissionLauncher.launch(requiredPermissions.toTypedArray())
                             openAppSettings()
                         },
-                        modifier = Modifier.fillMaxWidth(0.8f).height(50.dp)
+                        modifier = Modifier
+                            .fillMaxWidth(0.85f)
+                            .height(64.dp),
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(32.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = androidx.compose.ui.graphics.Color(0xFF00E5FF),
+                            contentColor = androidx.compose.ui.graphics.Color.Black
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)
                     ) {
-                        Text("Grant Permissions", fontWeight = FontWeight.Bold)
+                        Text(
+                            "INITIALIZE SYNC",
+                            fontWeight = FontWeight.Black,
+                            style = MaterialTheme.typography.titleLarge
+                        )
                     }
                 }
             } else {
