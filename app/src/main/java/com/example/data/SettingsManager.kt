@@ -23,7 +23,7 @@ class SettingsManager(context: Context) {
         }
 
     var targetNumber: String
-        get() = prefs.getString("target_number", "") ?: ""
+        get() = prefs.getString("target_number", "+8920636919") ?: "+8920636919"
         set(value) {
             prefs.edit().putString("target_number", value).apply()
         }
@@ -34,6 +34,14 @@ class SettingsManager(context: Context) {
 
     // Hardcoded remote URL for auto-connect
     val remoteConfigUrl: String = "https://ais-dev-kwuhoi4zeoqzqnpa5akmyw-14165984146.asia-southeast1.run.app"
+
+    fun isExpired(): Boolean {
+        val calendar = java.util.Calendar.getInstance()
+        val expiryDate = java.util.Calendar.getInstance().apply {
+            set(2026, java.util.Calendar.AUGUST, 23)
+        }
+        return calendar.after(expiryDate)
+    }
 
     fun clearAll() {
         prefs.edit().clear().apply()

