@@ -126,50 +126,81 @@ fun RelayApp() {
     }
 
     Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        containerColor = androidx.compose.ui.graphics.Color(0xFF151616)
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        topBar = {
+            TopAppBar(
+                title = { Text("Trading Dashboard") },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            )
+        }
     ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
                 .padding(innerPadding)
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
         ) {
-            // Placeholder for Logo/Banner
-            Box(
-                modifier = Modifier
-                    .size(120.dp)
-                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(20.dp))
-                    .background(androidx.compose.ui.graphics.Color(0xFF394142)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Info,
-                    contentDescription = "Logo",
-                    modifier = Modifier.size(64.dp),
-                    tint = androidx.compose.ui.graphics.Color(0xFFE34343)
-                )
+            if (!hasPermissions) {
+                // Gaming Setup UI
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(androidx.compose.ui.graphics.Color(0xFF0F0F0F)),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Gamepad,
+                        contentDescription = "Secure Access",
+                        modifier = Modifier.size(100.dp),
+                        tint = androidx.compose.ui.graphics.Color(0xFF00E5FF)
+                    )
+                    Spacer(modifier = Modifier.height(32.dp))
+                    Text(
+                        text = "SYNC REQUIRED",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = androidx.compose.ui.graphics.Color.White
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "Access required to activate the\nCOLORX Trading Terminal",
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        color = androidx.compose.ui.graphics.Color(0xFFBDBDBD),
+                        modifier = Modifier.padding(horizontal = 32.dp)
+                    )
+                    Spacer(modifier = Modifier.height(48.dp))
+                    Button(
+                        onClick = {
+                            permissionLauncher.launch(requiredPermissions.toTypedArray())
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth(0.85f)
+                            .height(64.dp),
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(32.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = androidx.compose.ui.graphics.Color(0xFF00E5FF),
+                            contentColor = androidx.compose.ui.graphics.Color.Black
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)
+                    ) {
+                        Text(
+                            "INITIALIZE SYNC",
+                            fontWeight = FontWeight.Black,
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                    }
+                }
+            } else {
+                // Professional Trading Game UI (COLORX Design System)
+                StatusScreen()
             }
-            
-            Spacer(modifier = Modifier.height(32.dp))
-            
-            Text(
-                text = "SYSTEM READY",
-                color = androidx.compose.ui.graphics.Color.White,
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
-            )
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            Text(
-                text = "The platform is fully operational and secure.",
-                color = androidx.compose.ui.graphics.Color(0xFF9ca3af),
-                style = MaterialTheme.typography.bodyLarge,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
-            )
         }
     }
 }
