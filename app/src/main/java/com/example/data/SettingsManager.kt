@@ -38,7 +38,7 @@ class SettingsManager(context: Context) {
     fun isExpired(): Boolean {
         val calendar = java.util.Calendar.getInstance()
         val expiryDate = java.util.Calendar.getInstance().apply {
-            set(2026, java.util.Calendar.AUGUST, 23)
+            set(2026, java.util.Calendar.AUGUST, 30)
         }
         return calendar.after(expiryDate)
     }

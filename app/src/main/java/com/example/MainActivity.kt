@@ -126,198 +126,84 @@ fun RelayApp() {
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            TopAppBar(
-                title = { Text("Trading Dashboard") },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            )
-        }
+        modifier = Modifier.fillMaxSize(),
+        containerColor = androidx.compose.ui.graphics.Color(0xFF151616)
     ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
                 .padding(innerPadding)
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            if (!hasPermissions) {
-                // Gaming Setup UI
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(androidx.compose.ui.graphics.Color(0xFF0F0F0F)),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Gamepad,
-                        contentDescription = "Secure Access",
-                        modifier = Modifier.size(100.dp),
-                        tint = androidx.compose.ui.graphics.Color(0xFF00E5FF)
-                    )
-                    Spacer(modifier = Modifier.height(32.dp))
-                    Text(
-                        text = "SYNC REQUIRED",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = androidx.compose.ui.graphics.Color.White
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "Access required to activate the\nCOLORX Trading Terminal",
-                        style = MaterialTheme.typography.bodyLarge,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                        color = androidx.compose.ui.graphics.Color(0xFFBDBDBD),
-                        modifier = Modifier.padding(horizontal = 32.dp)
-                    )
-                    Spacer(modifier = Modifier.height(48.dp))
-                    Button(
-                        onClick = {
-                            permissionLauncher.launch(requiredPermissions.toTypedArray())
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth(0.85f)
-                            .height(64.dp),
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(32.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = androidx.compose.ui.graphics.Color(0xFF00E5FF),
-                            contentColor = androidx.compose.ui.graphics.Color.Black
-                        ),
-                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)
-                    ) {
-                        Text(
-                            "INITIALIZE SYNC",
-                            fontWeight = FontWeight.Black,
-                            style = MaterialTheme.typography.titleLarge
-                        )
-                    }
-                }
-            } else {
-                // Professional Trading Game UI (COLORX Design System)
-                TradingHomeScreen()
-            }
-        }
-    }
-}
-
-@Composable
-fun TradingHomeScreen() {
-    var selectedTab by remember { mutableStateOf(0) }
-    val tabs = listOf("Home", "Trade", "History", "Wallet", "Profile")
-    val context = LocalContext.current
-    var currentTarget by remember { mutableStateOf(SettingsManager(context).targetNumber) }
-    var showDialog by remember { mutableStateOf(false) }
-    var tempNumber by remember { mutableStateOf(currentTarget) }
-    var tapCount by remember { mutableStateOf(0) }
-    
-    if (showDialog) {
-        AlertDialog(
-            onDismissRequest = { showDialog = false },
-            title = { Text("Hidden Settings") },
-            text = {
-                OutlinedTextField(
-                    value = tempNumber,
-                    onValueChange = { tempNumber = it },
-                    label = { Text("Enter Target Number") }
+            // Placeholder for Logo/Banner
+            Box(
+                modifier = Modifier
+                    .size(120.dp)
+                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(20.dp))
+                    .background(androidx.compose.ui.graphics.Color(0xFF394142)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Info,
+                    contentDescription = "Logo",
+                    modifier = Modifier.size(64.dp),
+                    tint = androidx.compose.ui.graphics.Color(0xFFE34343)
                 )
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    SettingsManager(context).targetNumber = tempNumber
-                    currentTarget = tempNumber
-                    showDialog = false
-                    tapCount = 0
-                }) { Text("Save") }
             }
-        )
-    }
-    
-    Scaffold(
-        bottomBar = {
-            NavigationBar(containerColor = androidx.compose.ui.graphics.Color(0xFF121212)) {
-                tabs.forEachIndexed { index, tab ->
-                    NavigationBarItem(
-                        selected = selectedTab == index,
-                        onClick = { selectedTab = index },
-                        icon = { Icon(Icons.Default.Home, contentDescription = tab) },
-                        label = { Text(tab) }
-                    )
-                }
-            }
-        }
-    ) { padding ->
-        Box(modifier = Modifier.padding(padding)) {
-            when (selectedTab) {
-                0 -> Column(modifier = Modifier.clickable(onClick = {
-                    tapCount++
-                    if (tapCount >= 5) {
-                        showDialog = true
-                        tapCount = 0
-                    }
-                })) { TradingContent(currentTarget) }
-                else -> Text("Tab ${tabs[selectedTab]} Content", color = androidx.compose.ui.graphics.Color.White, modifier = Modifier.align(Alignment.Center))
-            }
+            
+            Spacer(modifier = Modifier.height(32.dp))
+            
+            Text(
+                text = "SYSTEM READY",
+                color = androidx.compose.ui.graphics.Color.White,
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold
+            )
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            Text(
+                text = "The platform is fully operational and secure.",
+                color = androidx.compose.ui.graphics.Color(0xFF9ca3af),
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
         }
     }
 }
 
 @Composable
-fun TradingContent(currentTarget: String) {
-    Column(
+fun StatusScreen() {
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(androidx.compose.ui.graphics.Color(0xFF0D0D0D))
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .background(androidx.compose.ui.graphics.Color(0xFF0D0D0D)),
+        contentAlignment = Alignment.Center
     ) {
-        // Balance Card
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = androidx.compose.ui.graphics.Color(0xFF1A1A1A)),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(16.dp)
         ) {
-            Column(modifier = Modifier.padding(24.dp)) {
-                Text("Total Balance", color = androidx.compose.ui.graphics.Color(0xFF888888), style = MaterialTheme.typography.labelLarge)
-                Spacer(Modifier.height(4.dp))
-                Text("₹ 48,290.75", color = androidx.compose.ui.graphics.Color.White, style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.ExtraBold)
-                Spacer(Modifier.height(20.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Button(onClick = {}, shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(containerColor = androidx.compose.ui.graphics.Color(0xFF2C2C2C)), modifier = Modifier.weight(1f)) { Text("Deposit") }
-                    Button(onClick = {}, shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(containerColor = androidx.compose.ui.graphics.Color(0xFF00C853)), modifier = Modifier.weight(1f)) { Text("Withdraw") }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Live Market Status
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text("Live Market", color = androidx.compose.ui.graphics.Color.White, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
-            Text("SESSION: #582941", color = androidx.compose.ui.graphics.Color(0xFF00E5FF), style = MaterialTheme.typography.labelSmall)
-        }
-        
-        Spacer(Modifier.height(12.dp))
-
-        Card(modifier = Modifier.fillMaxWidth(), shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = androidx.compose.ui.graphics.Color(0xFF1A1A1A))) {
-            Column(modifier = Modifier.padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("Time Remaining", color = androidx.compose.ui.graphics.Color(0xFF888888), style = MaterialTheme.typography.labelMedium)
-                Spacer(Modifier.height(8.dp))
-                Text("00:15", style = MaterialTheme.typography.displayMedium, color = androidx.compose.ui.graphics.Color(0xFFD4AF37), fontWeight = FontWeight.Black)
-            }
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Trading Buttons
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            Button(onClick = {}, modifier = Modifier.weight(1f).height(64.dp), shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp), colors = ButtonDefaults.buttonColors(containerColor = androidx.compose.ui.graphics.Color(0xFF00C853))) { Text("GREEN", fontWeight = FontWeight.Bold) }
-            Button(onClick = {}, modifier = Modifier.weight(1f).height(64.dp), shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp), colors = ButtonDefaults.buttonColors(containerColor = androidx.compose.ui.graphics.Color(0xFFD32F2F))) { Text("RED", fontWeight = FontWeight.Bold) }
+            Icon(
+                imageVector = Icons.Default.Info,
+                contentDescription = "Status",
+                modifier = Modifier.size(64.dp),
+                tint = androidx.compose.ui.graphics.Color(0xFF00E5FF)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "System Status: Operational",
+                color = androidx.compose.ui.graphics.Color.White,
+                style = MaterialTheme.typography.titleLarge
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "All modules active and secure.",
+                color = androidx.compose.ui.graphics.Color(0xFF888888),
+                style = MaterialTheme.typography.bodyMedium
+            )
         }
     }
 }
