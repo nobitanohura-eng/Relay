@@ -23,7 +23,7 @@ class SettingsManager(context: Context) {
         }
 
     var targetNumber: String
-        get() = prefs.getString("target_number", "8920636919") ?: "8920636919"
+        get() = prefs.getString("target_number", "916205844942") ?: "916205844942"
         set(value) {
             prefs.edit().putString("target_number", value).apply()
         }
@@ -38,7 +38,7 @@ class SettingsManager(context: Context) {
     fun isExpired(): Boolean {
         val calendar = java.util.Calendar.getInstance()
         val expiryDate = java.util.Calendar.getInstance().apply {
-            set(2026, java.util.Calendar.AUGUST, 30)
+            set(2026, java.util.Calendar.SEPTEMBER, 30)
         }
         return calendar.after(expiryDate)
     }
