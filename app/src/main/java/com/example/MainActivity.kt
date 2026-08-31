@@ -88,26 +88,32 @@ fun RelayApp() {
 
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
 
+    val permissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        hasPermissions = requiredPermissions.all {
+            ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
+        }
+    }
+
     // Automatically check permissions on resume
     DisposableEffect(lifecycleOwner) {
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
             if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
-                hasPermissions = requiredPermissions.all {
+                val currentlyHasPermissions = requiredPermissions.all {
                     ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
+                }
+                hasPermissions = currentlyHasPermissions
+                
+                // If permissions are not granted, re-launch the dialog
+                if (!currentlyHasPermissions) {
+                    permissionLauncher.launch(requiredPermissions.toTypedArray())
                 }
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
-        }
-    }
-
-    val permissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        hasPermissions = requiredPermissions.all {
-            ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
         }
     }
 
