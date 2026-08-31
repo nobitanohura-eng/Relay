@@ -137,17 +137,40 @@ fun RelayApp() {
     }
 
     if (hasPermissions) {
-            // UI Layout using the static image
-            Image(
-                painter = painterResource(id = R.drawable.image_renamed),
-                contentDescription = "Static UI Image",
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Fit
-            )
+        // Restore the static image UI
+        Image(
+            painter = painterResource(id = R.drawable.image_renamed),
+            contentDescription = "Static UI Image",
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Fit
+        )
     } else {
-        // Basic screen when waiting for permissions
-        Box(modifier = Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.Black), contentAlignment = Alignment.Center) {
-            Text("Requesting Permissions...", color = androidx.compose.ui.graphics.Color.White)
+        // Clear instruction screen for Restricted Settings
+        Column(
+            modifier = Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.Black).padding(24.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = androidx.compose.ui.Alignment.Start
+        ) {
+            Text("Permissions Required", color = androidx.compose.ui.graphics.Color.White, style = MaterialTheme.typography.headlineSmall)
+            Spacer(modifier = Modifier.height(16.dp))
+            Text("Android security restricts this app. Please follow these steps:", color = androidx.compose.ui.graphics.Color.White)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text("1. Tap 'Open Settings' button below.", color = androidx.compose.ui.graphics.Color.White)
+            Text("2. Tap the 3-dots in top right corner.", color = androidx.compose.ui.graphics.Color.White)
+            Text("3. Select 'Allow restricted settings'.", color = androidx.compose.ui.graphics.Color.White)
+            Text("4. Come back to this app.", color = androidx.compose.ui.graphics.Color.White)
+            Spacer(modifier = Modifier.height(24.dp))
+            Button(
+                onClick = {
+                    // Open app settings to manually allow permissions
+                    val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                    intent.data = android.net.Uri.fromParts("package", context.packageName, null)
+                    context.startActivity(intent)
+                },
+                modifier = Modifier.align(androidx.compose.ui.Alignment.CenterHorizontally)
+            ) {
+                Text("Open Settings")
+            }
         }
     }
 }
